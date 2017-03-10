@@ -6,26 +6,26 @@
 /* Trap Numbers */
 
 /* Processor-defined: */
-#define T_DIVIDE                0    // divide error
-#define T_DEBUG                    1    // debug exception
-#define T_NMI                    2    // non-maskable interrupt
-#define T_BRKPT                    3    // breakpoint
-#define T_OFLOW                    4    // overflow
-#define T_BOUND                    5    // bounds check
-#define T_ILLOP                    6    // illegal opcode
-#define T_DEVICE                7    // device not available
-#define T_DBLFLT                8    // double fault
-// #define T_COPROC                9    // reserved (not used since 486)
-#define T_TSS                    10    // invalid task switch segment
-#define T_SEGNP                    11    // segment not present
-#define T_STACK                    12    // stack exception
-#define T_GPFLT                    13    // general protection fault
-#define T_PGFLT                    14    // page fault
-// #define T_RES                15    // reserved
-#define T_FPERR                    16    // floating point error
-#define T_ALIGN                    17    // aligment check
-#define T_MCHK                    18    // machine check
-#define T_SIMDERR                19    // SIMD floating point error
+#define T_DIVIDE                0   // divide error
+#define T_DEBUG                 1   // debug exception
+#define T_NMI                   2   // non-maskable interrupt
+#define T_BRKPT                 3   // breakpoint
+#define T_OFLOW                 4   // overflow
+#define T_BOUND                 5   // bounds check
+#define T_ILLOP                 6   // illegal opcode
+#define T_DEVICE                7   // device not available
+#define T_DBLFLT                8   // double fault
+// #define T_COPROC             9   // reserved (not used since 486)
+#define T_TSS                   10  // invalid task switch segment
+#define T_SEGNP                 11  // segment not present
+#define T_STACK                 12  // stack exception
+#define T_GPFLT                 13  // general protection fault
+#define T_PGFLT                 14  // page fault
+// #define T_RES                15  // reserved
+#define T_FPERR                 16  // floating point error
+#define T_ALIGN                 17  // aligment check
+#define T_MCHK                  18  // machine check
+#define T_SIMDERR               19  // SIMD floating point error
 
 #define T_SYSCALL               0x80 // SYSCALL, ONLY FOR THIS PROJ
 
@@ -94,6 +94,11 @@ void idt_init(void);
 void print_trapframe(struct trapframe *tf);
 void print_regs(struct pushregs *regs);
 bool trap_in_kernel(struct trapframe *tf);
+long syscall(long num, long arg0, long arg1, long arg2);
+long prvSyscallToHost(long which, long arg0, long arg1, long arg2);
+void prvSyscallExit(long code);
+void SysTickHandler( void );
+unsigned long ulSyscallTrap(long cause, long epc, long badaddr, long regs[32]);
 void S2M(void);
 #endif /* !__KERN_TRAP_TRAP_H__ */
 

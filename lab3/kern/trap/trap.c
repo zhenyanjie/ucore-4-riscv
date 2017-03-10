@@ -31,7 +31,7 @@ static void print_ticks() {
 static struct gatedesc idt[256] = {{0}};
 
 static struct pseudodesc idt_pd = {
-  /*  sizeof(idt) - 1, (uintptr_t)idt*/
+    sizeof(idt) - 1, (uintptr_t)idt
 };
 
 /* idt_init - initialize IDT to each of the entry points in kern/trap/vectors.S */
@@ -143,34 +143,6 @@ print_regs(struct pushregs *regs) {
     cprintf("  eax  0x%08x\n", regs->reg_eax);
 }
 
-/* temporary trapframe or pointer to trapframe */
-struct trapframe switchk2u, *switchu2k;
-
-static void prvSetNextTimerInterrupt(void)
-{
-	__asm volatile("csrr t0,mtimecmp");
-	__asm volatile("add t0,t0,%0" :: "r"(configTICK_CLOCK_HZ / configTICK_RATE_HZ));
-	__asm volatile("csrw mtimecmp,t0");
-}
-
-void vPortSysTickHandler( void )
-{
-	prvSetNextTimerInterrupt();
-
-	/* Increment the RTOS tick. */
-	cprintf("100 ticks\n");
-}
-
-void vPortSetupTimer(void)
-{
-	__asm volatile("csrr t0,mtime");
-	__asm volatile("add t0,t0,%0"::"r"(configTICK_CLOCK_HZ / configTICK_RATE_HZ));
-	__asm volatile("csrw mtimecmp,t0");
-        
-	/* Enable timer interupt */
-	__asm volatile("csrs mie,%0"::"r"(0x80));
-}
-
 static inline void
 print_pgfault(uint32_t status,uint32_t cause,uint32_t epc) {
     /* error_code:
@@ -189,21 +161,22 @@ print_pgfault(uint32_t status,uint32_t cause,uint32_t epc) {
 }
 
 static int
-pgfault_handler(struct trapframe* tf) {
-//    extern struct mm_struct *check_mm_struct;
-//    //print_pgfault(tf);
-//    if (check_mm_struct != NULL) {
-//        return do_pgfault(check_mm_struct, tf->tf_err, rcr2());
-//    }
-//    panic("unhandled page fault.\n");
+pgfault_handler(struct trapframe* tf) {/*
+    extern struct mm_struct *check_mm_struct;
+    //print_pgfault(tf);
+    if (check_mm_struct != NULL) {
+        return do_pgfault(check_mm_struct, tf->tf_err, rcr2());
+    }
+    panic("unhandled page fault.\n");*/
 }
 
 static volatile int in_swap_tick_event = 0;
 extern struct mm_struct *check_mm_struct;
-/*
-static void
+
+/*static void
 trap_dispatch(struct trapframe *tf) {
     char c;
+
     int ret;
 
     switch (tf->tf_trapno) {
@@ -223,8 +196,8 @@ trap_dispatch(struct trapframe *tf) {
         /* (1) After a timer interrupt, you should record this event using a global variable (increase it), such as ticks in kern/driver/clock.c
          * (2) Every TICK_NUM cycle, you can print some info using a funciton, such as print_ticks().
          * (3) Too Simple? Yes, I think so!
-         *//*
-        ticks ++;
+         */
+    /*    ticks ++;
         if (ticks % TICK_NUM == 0) {
             print_ticks();
         }
@@ -244,8 +217,8 @@ trap_dispatch(struct trapframe *tf) {
         break;
     case IRQ_OFFSET + IRQ_IDE1:
     case IRQ_OFFSET + IRQ_IDE2:
-        /* do nothing *//*
-        break;
+        /* do nothing */
+ /*       break;
     default:
         // in kernel, it must be a mistake
         if ((tf->tf_cs & 3) == 0) {
@@ -260,14 +233,116 @@ trap_dispatch(struct trapframe *tf) {
  * the code in kern/trap/trapentry.S restores the old CPU state saved in the
  * trapframe and then uses the iret instruction to return from the exception.
  * */
-void
+/*void
 trap(struct trapframe *tf) {
     // dispatch based on what type of trap occurred
-   // trap_dispatch(tf);
-}
+    trap_dispatch(tf);
+}*/
+struct trapframe switchk2u, *switchu2k;
+unsigned long ulSyscallTrap(long cause, long epc, long badaddr, long regs[32])
+{
+	long returnValue = 0;
+	long a=regs[17];
+	switch(cause)
+	{
+		case CAUSE_MACHINE_ECALL:
+		case CAUSE_SUPERVISOR_ECALL:
+		{
+			switch(regs[17])
+			{
+				case SYS_exit:
+				{
+					prvSyscallExit(regs[10]);
+					break;
+				}
+				//case
+				case SYS_write:
+				{
+					returnValue = prvSyscallToHost(regs[17], regs[10], regs[11], regs[12]);
+					asm volatile("csrw mepc,%0":: "r" (epc + 4));
+					break;
+				}
+				case SYS_TO_M:
+				{
+					//asm volatile("csrr t0, mepc");
+					//sti();
 
+					//asm volatile ("csrsi mstatus,0x8");
+					set_mstatus_field(MSTATUS_PRV1,3);
+					asm volatile("csrw mepc,%0":: "r" (epc + 4));
+					return epc+4;
+				}
+			}
+			break;
+		}
+		case CAUSE_FAULT_LOAD:
+		case CAUSE_FAULT_STORE:
+		case CAUSE_ILLEGAL_INSTRUCTION:
+		{
+			extern struct mm_struct *check_mm_struct;
+			uint32_t mstatus=read_csr(mstatus);
+			print_pgfault(mstatus,cause,badaddr);
+			if (check_mm_struct != NULL) {
+//				  cprintf("daole!\n");
+			        if(do_pgfault(check_mm_struct, cause, badaddr, mstatus)!=0)
+			        	panic("unhandled page fault in function.\n");
+			        asm volatile("csrw mepc,%0":: "r" (epc + 4));
+			    }
+			else
+			    panic("unhandled page fault.\n");
+			break;
+		}
+		default:
+		{
+			prvSyscallExit(cause);
+		}
+	}
+	regs[10] = returnValue;
+	return epc + 4;
+}
+/* Exit systemcall */
+void prvSyscallExit(long code)
+{
+	write_csr(mtohost, (code << 1) | 1);
+	for(;;) { }
+}
+/* Relay syscall to host */
+long prvSyscallToHost(long which, long arg0, long arg1, long arg2)
+{
+	volatile uint64_t magic_mem[8] __attribute__((aligned(64)));
+	magic_mem[0] = which;
+	magic_mem[1] = arg0;
+	magic_mem[2] = arg1;
+	magic_mem[3] = arg2;
+	__sync_synchronize();
+	write_csr(mtohost, (long) magic_mem);
+	while (swap_csr(mfromhost, 0) == 0)
+		;
+	return magic_mem[0];
+}
+long syscall(long num, long arg0, long arg1, long arg2)
+{
+	register long a7 asm("a7") = num;
+	register long a0 asm("a0") = arg0;
+	register long a1 asm("a1") = arg1;
+	register long a2 asm("a2") = arg2;
+	asm volatile ("scall":"+r"(a0) : "r"(a1), "r"(a2), "r"(a7));
+	return a0;
+}
+void SysTickHandler( void )
+{
+	set_next_timer_interrupt();
+	cprintf("100 ticks\n");
+	/* Increment the RTOS tick. */
+	/*if( xTaskIncrementTick() != 0 )
+	{
+		vTaskSwitchContext();
+	}*/
+}
 void S2M(void) {
 	syscall(SYS_TO_M, 1, (long) 0, 0);
+
+	//syscall
 }
 
 

@@ -4,7 +4,7 @@ SPACE	:= $(EMPTY) $(EMPTY)
 SLASH	:= /
 
 V       := @
-RISCV := /opt/riscv
+RISCV= /home/zyjie/ucore-4-riscv/riscv-tools
 # try to infer the correct GCCPREFX
 GCCPREFIX := riscv32-unknown-elf-
 ifndef GCCPREFIX

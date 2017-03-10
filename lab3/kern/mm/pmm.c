@@ -228,7 +228,7 @@ page_init(void) {
         maxpa = KMEMSIZE;
     }
 
-    extern char end[];
+   // extern char end[];
 
     npage = maxpa / PGSIZE;
     pages = (struct Page *)ROUNDUP((void *)realend, PGSIZE);
@@ -332,13 +332,14 @@ pmm_init(void) {
 
     // recursively insert boot_pgdir in itself
     // to form a virtual page table at virtual address VPT
-    boot_pgdir[PDX(VPT)] = PADDR(boot_pgdir) | PTE_V | PTE_R |PTE_TYPE_TABLE;
+    //boot_pgdir[PDX(VPT)] = PADDR(boot_pgdir) | PTE_V | PTE_R |PTE_TYPE_TABLE;
 
     // map all physical memory to linear memory with base linear addr KERNBASE
     //linear_addr KERNBASE~KERNBASE+KMEMSIZE = phy_addr 0~KMEMSIZE
     //But shouldn't use this map until enable_paging() & gdt_init() finished.
-    boot_map_segment(boot_pgdir, 0, KMEMSIZE, 0, PTE_V | PTE_R |PTE_TYPE_URWX_SRWX);
-
+    boot_map_segment(boot_pgdir, 0, KMEMSIZE, 0, PTE_TYPE_URWX_SRWX | PTE_R | PTE_V);
+    boot_pgdir[PDX(VPT)] = PADDR(boot_pgdir) | PTE_TYPE_TABLE | PTE_R | PTE_V;
+   
     //temporary map: 
     //virtual_addr 3G~3G+4M = linear_addr 0~4M = linear_addr 3G~3G+4M = phy_addr 0~4M     
    // boot_pgdir[0] = boot_pgdir[PDX(KERNBASE)];
@@ -474,21 +475,6 @@ page_remove_pte(pde_t *pgdir, uintptr_t la, pte_t *ptep) {
 void
 page_remove(pde_t *pgdir, uintptr_t la) {
     pte_t *ptep = get_pte(pgdir, la, 0);
-    //cprintf("remove *ptep=%08x\n",*ptep);
-	struct Page* page=pte2page(*ptep);
-	//cprintf("pagerefremoveshi %d\n",page->ref);
-	//cprintf("remove page addr=%08x\n",page);
-    //cprintf("ptep=%08x\n",ptep);
-    asm volatile("nop");
-    asm volatile("nop");
-    asm volatile("nop");
-    asm volatile("nop");
-    asm volatile("nop");
-    asm volatile("nop");
-    asm volatile("nop");
-    asm volatile("nop");
-    asm volatile("nop");
-
     if (ptep != NULL) {
         page_remove_pte(pgdir, la, ptep);
     }
@@ -624,15 +610,15 @@ check_boot_pgdir(void) {
 
     struct Page *p;
     p = alloc_page();
-
     assert(page_insert(boot_pgdir, p, 0x40000100, PTE_TYPE_SRW) == 0);
     assert(page_ref(p) == 1);
     assert(page_insert(boot_pgdir, p, 0x40000100 + PGSIZE, PTE_TYPE_SRW) == 0);
     assert(page_ref(p) == 2);
 
     const char *str = "ucore: Hello world!!";
-    strcpy((void *)0x100, str);
+    //strcpy((void *)0x100, str);
    // assert(strcmp((void *)0x100, (void *)(0x100 + PGSIZE)) == 0);
+
 
     *(char *)(page2kva(p) + 0x100) = '\0';
     assert(strlen((const char *)0x40000100) == 0);
@@ -693,7 +679,7 @@ get_pgtable_items(size_t left, size_t right, size_t start, uintptr_t *table, siz
 //print_pgdir - print the PDT&PT
 void
 print_pgdir(void) {
-   // cprintf("-------------------- BEGIN --------------------\n");
+    cprintf("-------------------- BEGIN --------------------\n");
     /*size_t left, right = 0, perm;
     while ((perm = get_pgtable_items(0, NPDEENTRY, right, vpd, &left, &right)) != 0) {
         cprintf("PDE(%03x) %08x-%08x %08x %s\n", right - left,
@@ -704,7 +690,7 @@ print_pgdir(void) {
                     l * PGSIZE, r * PGSIZE, (r - l) * PGSIZE, perm2str(perm));
         }
     }*/
-   // cprintf("--------------------- END ---------------------\n");
+    cprintf("--------------------- END ---------------------\n");
 }
 
 void *

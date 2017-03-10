@@ -4,8 +4,8 @@
 /* intr_enable - enable irq interrupt */
 void
 intr_enable(void) {
-    //sti();
-	asm volatile("csrs mstatus,%0"::"r"(0x1));
+    sti();
+	//asm volatile("csrs mstatus,%0"::"r"(0x1));
 }
 
 /* intr_disable - disable irq interrupt */

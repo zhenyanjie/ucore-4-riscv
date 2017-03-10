@@ -3,8 +3,6 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#include "../libs/stdioo.h"
-
 int
 main(int argc, char *argv[]) {
     struct stat st;

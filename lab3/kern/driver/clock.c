@@ -25,10 +25,21 @@
 
 volatile size_t ticks;
 
+/* Sets the next timer interrupt
+ * Reads previous timer compare register, and adds tickrate */
+void set_next_timer_interrupt(void)
+{
+	asm volatile("csrr t0,mtimecmp");
+	asm volatile("add t0,t0,%0" :: "r"(TICK_CLOCK_HZ / TICK_RATE_HZ));
+	asm volatile("csrw mtimecmp,t0");
+	//sti();
+}
+
 /* *
  * clock_init - initialize 8253 clock to interrupt 100 times per second,
  * and then enable IRQ_TIMER.
  * */
+
 void
 clock_init(void) {
     // set 8253 timer-chip

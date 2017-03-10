@@ -319,12 +319,6 @@ print_stackframe(void) {
         eip = ((uint32_t *)ebp)[1];
         ebp = ((uint32_t *)ebp)[0];
     }*/
-	uint32_t ra = read_ra();//,
-	//uint32_t mstatus = read_mstatus();
-	uint32_t pc=read_pc();
-	uint32_t fp=read_fp();
-	uint32_t sp=read_sp();
-	cprintf("print_stackframe OK!\n");
-	//cprintf("ra=0x%016x\nmstatus=0x%08x\n",ra,mstatus);
+	
 }
 

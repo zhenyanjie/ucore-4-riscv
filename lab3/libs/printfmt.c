@@ -36,19 +36,6 @@ static const char * const error_string[MAXERROR + 1] = {
 static void
 printnum(void (*putch)(int, void*), void *putdat,
         unsigned long long num, unsigned base, int width, int padc) {
-	/*unsigned long long result = num;
-		    unsigned mod = result - mod;
-
-		    // first recursively print all preceding (more significant) digits
-		    if (num >= base) {
-		        printnum(putch, putdat, result, base, width - 1, padc);
-		    } else {
-		        // print any needed pad characters before first digit
-		        while (-- width > 0)
-		            putch(padc, putdat);
-		    }
-		    // then print this (the least significant) digit
-		    putch("0123456789abcdef"[mod], putdat);*/
 		unsigned digs[sizeof(num) * 1000];
 			int pos = 0;
 

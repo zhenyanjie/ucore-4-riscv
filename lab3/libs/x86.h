@@ -30,9 +30,9 @@ static inline uint32_t read_ebp(void) __attribute__((always_inline));
 static inline void breakpoint(void) __attribute__((always_inline));
 static inline uint32_t read_dr(unsigned regnum) __attribute__((always_inline));
 static inline void write_dr(unsigned regnum, uint32_t value) __attribute__((always_inline));
-static inline uint64_t read_ra(void) __attribute__((always_inline));
-static inline uint64_t read_fp(void) __attribute__((always_inline));
-static inline uint64_t read_sp(void) __attribute__((always_inline));
+//static inline uint64_t read_ra(void) __attribute__((always_inline));
+//static inline uint64_t read_fp(void) __attribute__((always_inline));
+//static inline uint64_t read_sp(void) __attribute__((always_inline));
 static inline uint32_t get_field(uint32_t* reg,uint32_t mask) __attribute__((always_inline));
 static inline void set_field(uint32_t* reg, uint32_t mask, uint32_t val) __attribute__((always_inline));
 static inline void set_mstatus_field(uint32_t mask,uint32_t val) __attribute__((always_inline));
@@ -42,7 +42,7 @@ struct pseudodesc {
     uint16_t pd_lim;        // Limit
     uintptr_t pd_base;      // Base address
 } __attribute__ ((packed));
-static inline uint32_t read_pc(void) __attribute__((always_inline));
+//static inline uint32_t read_pc(void) __attribute__((always_inline));
 static inline void lidt(struct pseudodesc *pd) __attribute__((always_inline));
 static inline void sti(void) __attribute__((always_inline));
 static inline void cli(void) __attribute__((always_inline));
@@ -67,26 +67,6 @@ inb(uint16_t port) {
     uint8_t data;
    /* asm volatile ("inb %1, %0" : "=a" (data) : "d" (port) : "memory");*/
     return data;
-}
-static inline uint64_t
-read_ra(void) {							//OK!!!!!!!!!!!!!!
-    uint32_t ra;
-    asm volatile ("mv %0, ra" : "=r" (ra));
-    return ra;
-}
-
-static inline uint64_t
-read_fp(void) {							//OK!!!!!!!!!!!!!!
-    uint32_t fp;
-    asm volatile ("mv %0, s0" : "=r" (fp));
-    return fp;
-}
-
-static inline uint64_t
-read_sp(void) {							//OK!!!!!!!!!!!!!!
-    uint32_t sp;
-    asm volatile ("mv %0, sp" : "=r" (sp));
-    return sp;
 }
 static inline uint32_t
 get_field(uint32_t* reg,uint32_t mask)
@@ -131,8 +111,6 @@ set_mstatus_field(uint32_t mask,uint32_t val)
 {
 	uint32_t mstatus=read_csr(mstatus);
 	set_field(&mstatus,mask,val);
-	//cprintf("==%08x\n",mstatus);
-	//cprintf("haha\n");
 	write_csr(mstatus,mstatus);
 }
 
@@ -142,12 +120,7 @@ outw(uint16_t port, uint16_t data) {
 }
 static inline uint32_t
 read_sstatus_field(uint32_t mask) {
-    //uint32_t pc;
-    //asm volatile("mv , %04(%%ebp)" : "=r" (eip));
-    //return eip;
 	uint32_t sstatus=read_csr(sstatus);
-	//asm volatile("csrr %0,mstatus" : "=r"(mstatus));
-	//return 0;
 	uint32_t re=get_field(&sstatus,MSTATUS_PRV);
 	return re;
 }
@@ -166,17 +139,6 @@ read_ebp(void) {
     uint32_t ebp;
    /* asm volatile ("movl %%ebp, %0" : "=r" (ebp));*/
     return ebp;
-}
-static inline uint32_t
-read_pc(void) {
-    //uint32_t pc;
-    //asm volatile("mv , %04(%%ebp)" : "=r" (eip));
-    //return eip;
-
-	uint32_t pc;
-	asm volatile("auipc t1,0");
-	asm volatile("mv %0,t1": "=r" (pc));
-	return pc;
 }
 
 static inline void

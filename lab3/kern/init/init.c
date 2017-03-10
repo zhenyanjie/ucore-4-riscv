@@ -11,7 +11,8 @@
 #include <vmm.h>
 #include <ide.h>
 #include <swap.h>
-#include <kmonitor.h>
+#include <atomic.h>
+#include <x86.h>
 
 int kern_init(void) __attribute__((noreturn));
 
@@ -37,7 +38,7 @@ kern_init(void) {
     //pic_init();                 // init interrupt controller
     //idt_init();                 // init interrupt descriptor table
 
-    //vmm_init();
+    vmm_init();
 
     S2M();
     clock_init();
